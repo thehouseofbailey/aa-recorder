@@ -1,0 +1,73 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>GA4 Test Page</title>
+</head>
+<body>
+  <h1>GA4 Integration Test Page</h1>
+  <button id="fireEvent">Fire GA4 Event</button>
+  
+  <script>
+    // Mock GA4 collect endpoint
+    function sendGAEvent(params) {
+      const baseUrl = 'https://www.google-analytics.com/g/collect';
+      const queryString = new URLSearchParams(params).toString();
+      const url = `${baseUrl}?${queryString}`;
+      
+      // Send beacon (fire-and-forget)
+      if (navigator.sendBeacon) {
+        navigator.sendBeacon(url);
+      } else {
+        // Fallback to fetch
+        fetch(url, { method: 'POST', keepalive: true }).catch(() => {});
+      }
+      
+      console.log('Sent GA4 event:', params.en);
+    }
+    
+    // Auto-fire initial page_view event
+    window.addEventListener('load', () => {
+      sendGAEvent({
+        v: '2',
+        tid: 'G-TEST123',
+        cid: '123.456',
+        sid: '789',
+        sct: '1',
+        en: 'page_view',
+        dl: window.location.href,
+        dt: document.title,
+        dr: document.referrer || '',
+        _s: '1',
+        _p: '1',
+        _ss: '1',
+      });
+    });
+    
+    // Fire custom event on button click
+    document.getElementById('fireEvent').addEventListener('click', () => {
+      sendGAEvent({
+        v: '2',
+        tid: 'G-TEST123',
+        cid: '123.456',
+        sid: '789',
+        sct: '1',
+        en: 'button_click',
+        'ep.button_text': 'Fire GA4 Event',
+        'ep.page_section': 'main',
+        'epn.click_timestamp': Date.now(),
+        'epn.loading_time_sec': 2.5,
+        'ga.custom_dimension': 'test_value',
+        _s: '2',
+        _p: '1',
+      });
+    });
+    
+    // Auto-click after 1 second for testing
+    setTimeout(() => {
+      document.getElementById('fireEvent').click();
+    }, 1000);
+  </script>
+</body>
+</html>

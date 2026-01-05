@@ -122,7 +122,132 @@ cd <repo-name>
 ```
 
 ### 3) Add this README
-Create **`README.md`** at the repo root and paste this content.
+Create **`# AA Recorder
+
+Analytics Ads Recorder built with Electron and Playwright for automated web content recording.
+
+## Architecture
+
+This application combines several technologies to provide a robust recording solution:
+
+- **Electron**: Desktop application framework for cross-platform deployment
+- **Playwright**: Browser automation with bundled Chromium for consistent recording
+- **React**: Modern UI framework with TypeScript for type safety
+- **Vite**: Fast build tool for development and production
+- **Tailwind CSS**: Utility-first CSS framework for responsive design
+
+## Why Playwright's Bundled Chromium?
+
+We chose Playwright's bundled Chromium over system browsers for several key advantages:
+
+1. **Consistency**: Every user runs the exact same browser version, eliminating "works on my machine" issues
+2. **Reliability**: No dependency on user's installed browsers or their configurations
+3. **Automation-Optimized**: Playwright's Chromium is specifically built for automation with enhanced APIs
+4. **Security**: Controlled environment with known capabilities and limitations
+5. **Portability**: Self-contained solution that works identically across different systems
+
+## Why Portable EXE and AppImage Distribution?
+
+The application provides different distribution formats optimized for each platform:
+
+### Windows - Portable EXE
+1. **No Installation Required**: Users can run the application immediately without admin rights
+2. **Isolation**: Doesn't interfere with system-installed software or registry
+3. **Version Management**: Multiple versions can coexist without conflicts
+4. **Enterprise Friendly**: Easy to deploy in corporate environments with restricted installation policies
+5. **Clean Uninstall**: Simply delete the executable - no leftover files or registry entries
+
+### Linux - AppImage
+1. **Universal Compatibility**: Runs on most Linux distributions without dependency issues
+2. **Self-Contained**: All dependencies bundled, no need to install system packages
+3. **Portable**: Can be run from any location, including removable media
+4. **No Root Required**: Standard users can execute without administrator privileges
+5. **Distribution Agnostic**: Works across different Linux flavors and versions
+
+### macOS - DMG
+1. **Native Experience**: Standard macOS application format
+2. **Code Signed**: Can be properly signed for distribution outside App Store
+3. **Easy Installation**: Drag-and-drop installation familiar to Mac users
+
+## Project Structure
+
+```
+src/
+├── main/           # Electron main process
+│   ├── index.ts    # Main application entry
+│   └── preload.ts  # IPC bridge
+├── renderer/       # React UI
+│   ├── src/        # React components and logic
+│   └── styles/     # CSS and Tailwind styles
+└── recorder/       # Playwright recording logic
+    └── RecorderManager.ts
+```
+
+## Development
+
+### Prerequisites
+
+- Node.js 18+ 
+- npm or yarn
+
+### Setup
+
+```bash
+npm install
+```
+
+### Development Mode
+
+```bash
+npm run dev
+```
+
+This starts both the Vite dev server (UI) and Electron in development mode with hot reload.
+
+### Build for Production
+
+```bash
+# Build for current platform
+npm run build
+
+# Build platform-specific
+npm run build:win      # Windows portable EXE
+npm run build:linux    # Linux AppImage  
+npm run build:mac      # macOS DMG
+
+# Build for all platforms
+npm run build:all
+```
+
+### Scripts
+
+- `postinstall`: Automatically installs Playwright's Chromium browser
+- `dev`: Runs both UI and Electron in development mode
+- `dev:ui`: Starts Vite development server
+- `dev:electron`: Builds and runs Electron main process
+- `build`: Production build for current platform
+- `build:win`: Creates portable Windows executable
+- `build:linux`: Creates Linux AppImage
+- `build:mac`: Creates macOS DMG installer  
+- `build:all`: Builds for all platforms
+- `audit-fix`: Fixes npm security vulnerabilities
+- `lint`: Runs ESLint for code quality
+
+## Configuration
+
+The application uses TypeScript with strict mode enabled and ESNext modules for modern JavaScript features. Tailwind CSS is configured for the renderer process only, keeping the main process lightweight.
+
+## Features
+
+- **URL Recording**: Navigate to any URL and record browser interactions
+- **Video Capture**: Records browser content as video files
+- **Duration Control**: Set recording duration or stop manually
+- **Real-time Status**: Live updates on recording progress
+- **Cross-platform**: Works on Windows, macOS, and Linux
+
+## License
+
+MIT`** at the repo root and paste this content.
 
 ### 4) Initialize the project
 ```bash

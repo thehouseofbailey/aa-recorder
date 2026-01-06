@@ -32,7 +32,7 @@
     "appId": "com.mmi.aa.recorder",
     "productName": "AA-Recorder",
     "asar": true,
-    "publish": "never",
+    "publish": [],
     "files": [
       "dist/**",
       "package.json"

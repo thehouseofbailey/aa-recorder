@@ -9,6 +9,12 @@ export default defineConfig({
   build: {
     outDir: '../../dist/renderer',
     emptyOutDir: true,
+    rollupOptions: {
+      external: [],
+      output: {
+        manualChunks: undefined,
+      },
+    },
   },
   resolve: {
     alias: {
@@ -16,6 +22,12 @@ export default defineConfig({
       '@main': resolve(__dirname, 'src/main'),
       '@renderer': resolve(__dirname, 'src/renderer'),
       '@recorder': resolve(__dirname, 'src/recorder'),
+    },
+  },
+  optimizeDeps: {
+    include: ['react-window'],
+    esbuildOptions: {
+      target: 'es2020',
     },
   },
   server: {

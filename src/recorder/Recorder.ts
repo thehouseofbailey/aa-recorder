@@ -307,9 +307,12 @@ export class Recorder extends EventEmitter {
       this.userDataDir = this.createFreshUserDataDir();
       console.log(`User data directory: ${this.userDataDir}`);
       
-      // Launch Chromium headful with isolation
+      // Determine if running in CI environment
+      const isCI = process.env.CI === 'true' || process.env.GITHUB_ACTIONS === 'true';
+      
+      // Launch Chromium with isolation
       this.browser = await chromium.launchPersistentContext(this.userDataDir, {
-        headless: false,
+        headless: isCI ? true : false,
         viewport: { width: 1920, height: 1080 },
         args: [
           '--disable-blink-features=AutomationControlled',

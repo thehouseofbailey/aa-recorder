@@ -68,7 +68,7 @@
     "playwright": "^1.49.0",
     "react": "^18.3.0",
     "react-dom": "^18.3.0",
-    "react-window": "^2.2.4"
+    "react-window": "^1.8.10"
   },
   "devDependencies": {
     "@types/node": "^22.0.0",
@@ -104,7 +104,5 @@
     "recorder",
     "analytics",
     "ads"
-  ],
-  "author": "",
-  "license": "MIT"
+  ]
 }

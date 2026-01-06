@@ -161,7 +161,12 @@ describe('Recorder Integration Tests', () => {
         mode: 'ga',
       });
 
-      await new Promise(resolve => setTimeout(resolve, 2000));
+      // Navigate to generate GA4 events (like the other tests)
+      const context = await browser.newContext();
+      const page = await context.newPage();
+      await page.goto(testPageUrl, { waitUntil: 'networkidle' });
+      await page.waitForTimeout(3000);
+      await context.close();
 
       const stopResult = await recorder.stop();
       exportPath = stopResult.csvPath;

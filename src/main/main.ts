@@ -134,7 +134,7 @@ class ElectronApp {
     const isDev = process.env.NODE_ENV === 'development';
     
     if (isDev) {
-      this.mainWindow.loadURL('http://localhost:3001');
+      this.mainWindow.loadURL('http://localhost:3000');
       this.mainWindow.webContents.openDevTools();
     } else {
       const rendererPath = resolve(__dirname, '..', 'renderer', 'index.html');

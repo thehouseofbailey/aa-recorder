@@ -6,7 +6,7 @@
   "license": "MIT",
   "repository": {
     "type": "git",
-    "url": "https://github.com/yourusername/aa-recorder"
+    "url": "https://github.com/thehouseofbailey/aa-recorder"
   },
   "main": "dist/main/main.js",
   "scripts": {
@@ -32,6 +32,7 @@
     "appId": "com.mmi.aa.recorder",
     "productName": "AA-Recorder",
     "asar": true,
+    "publish": "never",
     "files": [
       "dist/**",
       "package.json"

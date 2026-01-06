@@ -45,17 +45,14 @@ describe('Recorder Integration Tests', () => {
       });
 
       expect(startResult.pageUrl).toBeDefined();
-      expect(startResult.pageUrl).toContain('ga4/event-builder');
+      expect(startResult.pageUrl).toContain('about:blank');
 
-      // Use our separate browser to visit test page and fire events
-      const context = await browser.newContext();
-      const page = await context.newPage();
-
-      // Navigate to test page (which will fire GA events)
-      await page.goto(testPageUrl, { waitUntil: 'networkidle' });
+      // Use the recorder's page to visit test page and fire events
+      // This generates GA4 events that will be captured
+      await recorder.page.goto(testPageUrl, { waitUntil: 'networkidle' });
 
       // Wait for events to be captured (page_view + button_click)
-      await page.waitForTimeout(3000);
+      await recorder.page.waitForTimeout(3000);
 
       // Stop recording
       const stopResult = await recorder.stop();
@@ -82,7 +79,6 @@ describe('Recorder Integration Tests', () => {
 
       // Clean up CSV file
       await fs.unlink(stopResult.csvPath);
-      await context.close();
 
     } finally {
       await recorder.cleanup();
@@ -161,12 +157,9 @@ describe('Recorder Integration Tests', () => {
         mode: 'ga',
       });
 
-      // Navigate to generate GA4 events (like the other tests)
-      const context = await browser.newContext();
-      const page = await context.newPage();
-      await page.goto(testPageUrl, { waitUntil: 'networkidle' });
-      await page.waitForTimeout(3000);
-      await context.close();
+      // Navigate to generate GA4 events using recorder's browser
+      await recorder.page.goto(testPageUrl, { waitUntil: 'networkidle' });
+      await recorder.page.waitForTimeout(3000);
 
       const stopResult = await recorder.stop();
       exportPath = stopResult.csvPath;
@@ -216,12 +209,9 @@ describe('Recorder Integration Tests', () => {
         recordingName: 'round-trip-test',
         mode: 'ga',
       });
-      // Navigate to test page to generate GA4 events
-      const context = await browser.newContext();
-      const page = await context.newPage();
-      await page.goto(testPageUrl, { waitUntil: 'networkidle' });
-      await page.waitForTimeout(3000);
-      await context.close();
+      // Navigate to test page to generate GA4 events using recorder's browser
+      await recorder.page.goto(testPageUrl, { waitUntil: 'networkidle' });
+      await recorder.page.waitForTimeout(3000);
       
       const stopResult = await recorder.stop();
       const originalPath = stopResult.csvPath;

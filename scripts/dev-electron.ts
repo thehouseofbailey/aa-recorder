@@ -11,7 +11,7 @@ async function buildMain() {
   await build({
     entryPoints: [join('src', 'main', 'main.ts')],
     bundle: true,
-    outfile: join('dist', 'main', 'index.js'),
+    outfile: join('dist', 'main', 'main.js'),
     platform: 'node',
     target: 'node18',
     external: [

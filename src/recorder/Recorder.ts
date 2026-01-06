@@ -338,9 +338,9 @@ export class Recorder extends EventEmitter {
       this.dynamicColumns.clear();
       this.pendingResponses.clear();
 
-      // Navigate to GA4 Event Builder for testing
+      // Navigate to initial page based on mode
       const initialUrl = config.mode === 'ga' 
-        ? 'https://ga-dev-tools.web.app/ga4/event-builder/' 
+        ? 'about:blank' 
         : 'about:blank';
       
       await this.page.goto(initialUrl, { waitUntil: 'domcontentloaded', timeout: 30000 });

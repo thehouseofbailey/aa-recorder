@@ -4,6 +4,8 @@ import { contextBridge, ipcRenderer, IpcRendererEvent } from 'electron';
 interface StartRecordingPayload {
   recordingName: string;
   mode: 'ga';
+  includeDomains?: string[];
+  startingUrl?: string;
 }
 
 interface StartRecordingResponse {
@@ -79,6 +81,12 @@ const recorderAPI = {
     
   import: (payload: ImportPayload): Promise<ImportResponse> =>
     ipcRenderer.invoke('recorder:import', payload),
+
+  showSaveDialog: (): Promise<{ filePath: string | undefined }> =>
+    ipcRenderer.invoke('dialog:showSaveDialog'),
+
+  showOpenDialog: (): Promise<{ filePath: string | undefined }> =>
+    ipcRenderer.invoke('dialog:showOpenDialog'),
 };
 
 // Event listener management

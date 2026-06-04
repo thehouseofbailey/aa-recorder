@@ -21,6 +21,7 @@
 import React, { useState, useEffect } from 'react';
 import { VirtualizedEventsList } from './components/VirtualizedEventsList';
 import { EventDetailsPanel } from './components/EventDetailsPanel';
+import { normalizeIncludeDomains } from '@recorder/urlMatchers';
 
 interface RecordingStatus {
   isRecording: boolean;
@@ -40,7 +41,26 @@ function App() {
   const [events, setEvents] = useState<RecorderEvent[]>([]);
   const [selectedEventIndex, setSelectedEventIndex] = useState<number | null>(null);
   const [recordingName, setRecordingName] = useState<string>('');
+  const [startingUrl, setStartingUrl] = useState<string>('');
+  const [includeDomainInput, setIncludeDomainInput] = useState<string>('');
+  const [includeDomains, setIncludeDomains] = useState<string[]>(() => {
+    const storedValue = window.localStorage.getItem('aa-recorder-include-domains');
+    if (!storedValue) {
+      return [];
+    }
+
+    try {
+      const parsed = JSON.parse(storedValue) as unknown;
+      return Array.isArray(parsed) ? normalizeIncludeDomains(parsed.filter((item): item is string => typeof item === 'string')) : [];
+    } catch {
+      return [];
+    }
+  });
   const [error, setError] = useState<string | null>(null);
+
+  useEffect(() => {
+    window.localStorage.setItem('aa-recorder-include-domains', JSON.stringify(includeDomains));
+  }, [includeDomains]);
 
   useEffect(() => {
     // Set up real-time event listener
@@ -83,6 +103,8 @@ function App() {
       const result = await window.recorder.start({
         recordingName: recordingName.trim(),
         mode: 'ga',
+        includeDomains,
+        startingUrl: startingUrl.trim() || undefined,
       });
       
       setStatus({
@@ -101,6 +123,33 @@ function App() {
     } catch (error: any) {
       console.error('Failed to start recording:', error);
       setError(`Failed to start recording: ${error.message || error}`);
+    }
+  };
+
+  const handleAddIncludeDomains = () => {
+    const nextDomains = normalizeIncludeDomains(
+      includeDomainInput
+        .split(/[\n,]/)
+        .map((domain) => domain.trim())
+        .filter(Boolean)
+    );
+
+    if (nextDomains.length === 0) {
+      return;
+    }
+
+    setIncludeDomains((currentDomains) => Array.from(new Set([...currentDomains, ...nextDomains])));
+    setIncludeDomainInput('');
+  };
+
+  const handleRemoveIncludeDomain = (domainToRemove: string) => {
+    setIncludeDomains((currentDomains) => currentDomains.filter((domain) => domain !== domainToRemove));
+  };
+
+  const handleIncludeDomainKeyDown = (event: React.KeyboardEvent<HTMLInputElement>) => {
+    if (event.key === 'Enter') {
+      event.preventDefault();
+      handleAddIncludeDomains();
     }
   };
 
@@ -127,13 +176,11 @@ function App() {
   const handleExportData = async () => {
     try {
       setError(null);
-      console.log('Exporting data...');
-      
-      const result = await window.recorder.export({});
-      
+      const { filePath } = await window.recorder.showSaveDialog();
+      if (!filePath) return;
+
+      const result = await window.recorder.export({ targetPath: filePath });
       console.log(`Data exported to: ${result.csvPath}`);
-      setError(null); // Clear any previous errors
-      // Show success in status bar instead of alert
       
     } catch (error: any) {
       console.error('Failed to export data:', error);
@@ -144,19 +191,13 @@ function App() {
   const handleImportData = async () => {
     try {
       setError(null);
-      
-      // For now, let user provide path via prompt
-      // TODO: Add file picker dialog
-      const csvPath = prompt('Enter the path to the CSV file to import:');
-      if (!csvPath) return;
+      const { filePath } = await window.recorder.showOpenDialog();
+      if (!filePath) return;
 
-      console.log('Importing data from:', csvPath);
-      
-      const result = await window.recorder.import({ csvPath });
-      
+      console.log('Importing data from:', filePath);
+      const result = await window.recorder.import({ csvPath: filePath });
       console.log(`Imported ${result.count} events`);
       
-      // Clear current events - they will be repopulated via recorder:event
       setEvents([]);
       setSelectedEventIndex(null);
       
@@ -196,6 +237,68 @@ function App() {
               <span className="text-xs text-gray-500 border-l border-gray-300 pl-3">
                 Mode: <span className="font-semibold text-gray-700">GA</span>
               </span>
+              <label htmlFor="starting-url" className="text-sm font-semibold text-gray-700 border-l border-gray-300 pl-3">
+                Starting URL:
+              </label>
+              <input
+                id="starting-url"
+                type="text"
+                value={startingUrl}
+                onChange={(e) => setStartingUrl(e.target.value)}
+                disabled={status.isRecording}
+                className="px-3 py-1.5 border border-gray-300 rounded text-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 disabled:bg-gray-100 disabled:text-gray-600"
+                placeholder="e.g., https://example.com"
+                aria-label="Starting URL for Chromium window"
+              />
+            </div>
+
+            <div className="flex flex-col gap-2 min-w-[360px] max-w-[560px]">
+              <div className="flex items-center gap-2">
+                <label htmlFor="include-domain-input" className="text-sm font-semibold text-gray-700 whitespace-nowrap">
+                  Include domains:
+                </label>
+                <input
+                  id="include-domain-input"
+                  type="text"
+                  value={includeDomainInput}
+                  onChange={(event) => setIncludeDomainInput(event.target.value)}
+                  onKeyDown={handleIncludeDomainKeyDown}
+                  disabled={status.isRecording}
+                  className="flex-1 px-3 py-1.5 border border-gray-300 rounded text-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 disabled:bg-gray-100 disabled:text-gray-600"
+                  placeholder="Paste domains, comma or newline separated"
+                  aria-label="Include domains"
+                />
+                <button
+                  type="button"
+                  onClick={handleAddIncludeDomains}
+                  disabled={status.isRecording || !includeDomainInput.trim()}
+                  className="px-3 py-1.5 bg-gray-800 text-white text-sm font-semibold rounded hover:bg-gray-900 disabled:bg-gray-300 disabled:cursor-not-allowed transition-colors"
+                >
+                  Add
+                </button>
+              </div>
+
+              {includeDomains.length > 0 && (
+                <div className="flex flex-wrap gap-2">
+                  {includeDomains.map((domain) => (
+                    <span
+                      key={domain}
+                      className="inline-flex items-center gap-2 rounded-full bg-blue-50 border border-blue-200 px-3 py-1 text-xs text-blue-800"
+                    >
+                      {domain}
+                      <button
+                        type="button"
+                        onClick={() => handleRemoveIncludeDomain(domain)}
+                        disabled={status.isRecording}
+                        className="text-blue-600 hover:text-blue-900 disabled:cursor-not-allowed"
+                        aria-label={`Remove ${domain}`}
+                      >
+                        ×
+                      </button>
+                    </span>
+                  ))}
+                </div>
+              )}
             </div>
 
             {/* Right: Action Buttons */}

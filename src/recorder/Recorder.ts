@@ -20,10 +20,11 @@
  */
 
 import { chromium, Browser, BrowserContext, Page, Request, Response } from 'playwright';
-import { join } from 'path';
+import { join, dirname } from 'path';
 import { existsSync, mkdirSync, writeFileSync, readFileSync } from 'fs';
 import { tmpdir, homedir } from 'os';
 import { EventEmitter } from 'events';
+import { isIncludedAnalyticsRequest, normalizeIncludeDomains } from './urlMatchers';
 
 // Core GA4 Event structure with dynamic fields
 export interface GAEvent {
@@ -68,6 +69,8 @@ export interface GAEvent {
 export interface RecorderConfig {
   recordingName: string;
   mode: 'ga';
+  includeDomains?: string[];
+  startingUrl?: string;
 }
 
 export interface StartResult {
@@ -129,7 +132,8 @@ export class Recorder extends EventEmitter {
   private eventIndex: number = 0;
   private outputDir: string;
   private dynamicColumns: Set<string> = new Set();
-  private pendingResponses: Map<string, { event: GAEvent; timestamp: number }> = new Map();
+  private includeDomains: string[] = [];
+  private pendingResponses: Map<Request, { event: GAEvent; timestamp: number }> = new Map();
 
   constructor() {
     super();
@@ -150,10 +154,6 @@ export class Recorder extends EventEmitter {
     const userDataDir = join(tmpdir(), `playwright-aa-recorder-${timestamp}-${randomId}`);
     mkdirSync(userDataDir, { recursive: true });
     return userDataDir;
-  }
-
-  private isGA4Request(url: string): boolean {
-    return GA4_PATTERNS.some(pattern => pattern.test(url));
   }
 
   private safeParseUrl(urlString: string): URL | null {
@@ -218,7 +218,7 @@ export class Recorder extends EventEmitter {
   private handleRequest(request: Request): void {
     const url = request.url();
     
-    if (!this.isGA4Request(url)) {
+    if (!isIncludedAnalyticsRequest(url, this.includeDomains)) {
       return;
     }
 
@@ -247,14 +247,13 @@ export class Recorder extends EventEmitter {
     };
 
     // Store for response correlation
-    const requestId = request.url() + '_' + now;
-    this.pendingResponses.set(requestId, { event, timestamp: now });
+    this.pendingResponses.set(request, { event, timestamp: now });
     
     // Set a timeout to process the event even if response doesn't arrive
     setTimeout(() => {
-      const pending = this.pendingResponses.get(requestId);
+      const pending = this.pendingResponses.get(request);
       if (pending) {
-        this.pendingResponses.delete(requestId);
+        this.pendingResponses.delete(request);
         this.finalizeEvent(pending.event);
       }
     }, 5000); // 5 second timeout
@@ -263,25 +262,19 @@ export class Recorder extends EventEmitter {
   private async handleResponse(response: Response): Promise<void> {
     const url = response.url();
     
-    if (!this.isGA4Request(url)) {
+    if (!isIncludedAnalyticsRequest(url, this.includeDomains)) {
       return;
     }
 
-    // Find matching pending request
-    const requestId = Array.from(this.pendingResponses.keys()).find(id => 
-      id.startsWith(url)
-    );
+    const pending = this.pendingResponses.get(response.request());
 
-    if (requestId) {
-      const pending = this.pendingResponses.get(requestId);
-      if (pending) {
-        this.pendingResponses.delete(requestId);
-        
-        // Update status code from response
-        pending.event.status_code = response.status();
-        
-        this.finalizeEvent(pending.event);
-      }
+    if (pending) {
+      this.pendingResponses.delete(response.request());
+
+      // Update status code from response
+      pending.event.status_code = response.status();
+
+      this.finalizeEvent(pending.event);
     }
   }
 
@@ -333,15 +326,14 @@ export class Recorder extends EventEmitter {
       this.isRecording = true;
       this.recordingStartTime = Date.now();
       this.currentConfig = config;
+      this.includeDomains = normalizeIncludeDomains(config.includeDomains ?? []);
       this.events = [];
       this.eventIndex = 0;
       this.dynamicColumns.clear();
       this.pendingResponses.clear();
 
       // Navigate to initial page based on mode
-      const initialUrl = config.mode === 'ga' 
-        ? 'about:blank' 
-        : 'about:blank';
+      const initialUrl = config.startingUrl || 'about:blank';
       
       await this.page.goto(initialUrl, { waitUntil: 'domcontentloaded', timeout: 30000 });
 
@@ -375,6 +367,7 @@ export class Recorder extends EventEmitter {
       this.isRecording = false;
       this.recordingStartTime = null;
       this.currentConfig = null;
+      this.includeDomains = [];
       
       console.log(`Recording stopped. Events: ${count}, CSV: ${csvPath}`);
       
@@ -387,12 +380,19 @@ export class Recorder extends EventEmitter {
   }
 
   async exportCsv(targetPath?: string, schemaMode: SchemaMode = 'sheet-compatible-expandable'): Promise<string> {
-    const outputDir = targetPath || this.outputDir;
-    const recordingName = this.currentConfig?.recordingName || 'recording';
-    const timestamp = new Date().toISOString().replace(/[:.]/g, '-');
-    const filename = `${recordingName}_${timestamp}.csv`;
-    const csvPath = join(outputDir, filename);
-    
+    let csvPath: string;
+    if (targetPath && targetPath.toLowerCase().endsWith('.csv')) {
+      // Full file path provided (e.g. from Save dialog)
+      csvPath = targetPath;
+    } else {
+      const outputDir = targetPath || this.outputDir;
+      const recordingName = this.currentConfig?.recordingName || 'recording';
+      const timestamp = new Date().toISOString().replace(/[:.]/g, '-');
+      const filename = `${recordingName}_${timestamp}.csv`;
+      csvPath = join(outputDir, filename);
+    }
+    const outputDir = dirname(csvPath);
+
     if (!existsSync(outputDir)) {
       mkdirSync(outputDir, { recursive: true });
     }
@@ -575,6 +575,7 @@ export class Recorder extends EventEmitter {
       
       this.context = null;
       this.page = null;
+      this.includeDomains = [];
       
       // Clean up temporary user data directory
       if (this.userDataDir && existsSync(this.userDataDir)) {

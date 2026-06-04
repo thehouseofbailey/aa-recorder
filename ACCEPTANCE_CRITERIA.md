@@ -18,6 +18,7 @@
   - All other network requests are ignored
   - No false positives (non-GA4 requests captured)
   - No false negatives (valid GA4 requests missed)
+  - Future server-side analytics support: user-configurable include-domain list for alternate analytics endpoints
 
 ### ✅ Live Event Streaming
 - [ ] **Events stream to UI in real-time**

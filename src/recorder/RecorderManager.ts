@@ -4,6 +4,8 @@ import { Recorder, GAEvent } from './Recorder';
 export interface StartRecordingConfig {
   recordingName: string;
   mode: 'ga';
+  includeDomains?: string[];
+  startingUrl?: string;
 }
 
 export interface StartRecordingResult {
@@ -56,6 +58,8 @@ export class RecorderManager extends EventEmitter {
       const result = await this.recorder.start({
         recordingName: config.recordingName,
         mode: config.mode,
+        includeDomains: config.includeDomains,
+        startingUrl: config.startingUrl,
       });
       
       return result;

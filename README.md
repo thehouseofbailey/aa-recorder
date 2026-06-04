@@ -28,7 +28,7 @@
 
 ## 🎯 What is recorded (Phase 1)
 
-**GA4 browser hits**:
+**Current capture targets**:
 - `https://www.google-analytics.com/g/collect`
 - Regional variants: `https://region*.google-analytics.com/g/collect`
 
@@ -37,6 +37,8 @@ Common GA4 query parameters parsed:
 - Event params:  
   - Text: `ep.*` → **dynamic columns** (e.g., `ep.environment`)  
   - Numeric: `epn.*` → **dynamic columns** (e.g., `epn.loading_time_sec`)
+
+> As the project migrates toward server-side analytics, the UI should let each website add its own include-domain list so equivalent requests on alternate analytics domains are still captured.
 
 > **Dynamic expansion:** any previously unseen GA keys are added as columns (see CSV schema below).
 
@@ -322,7 +324,7 @@ npm run build:win
 ## 🗺️ Roadmap
 
 - **Phase 1:** GA4 recording, CSV export/import, live UI.  
-- **Phase 1.1:** Filters by `tid`, `en`, `cid`; session grouping (`sid`); XLSX export.  
+- **Phase 1.1:** Filters by `tid`, `en`, `cid`; session grouping (`sid`); per-site include-domain lists for server-side analytics; XLSX export.  
 - **Phase 2:** Add **Google Ads** endpoints & parsing; scripted journey automation.  
 - **Phase 3:** Advanced analytics (funnel summaries, cohort views).
 

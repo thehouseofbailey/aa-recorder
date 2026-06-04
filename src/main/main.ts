@@ -17,13 +17,15 @@
  * - recorder:import - Import events from CSV file
  */
 
-import { app, BrowserWindow, ipcMain, BrowserWindow as BrowserWindowType } from 'electron';
+import { app, BrowserWindow, ipcMain, dialog, BrowserWindow as BrowserWindowType } from 'electron';
 import { join, resolve } from 'path';
 import { RecorderManager } from '../recorder/RecorderManager';
 
 interface StartRecordingPayload {
   recordingName: string;
   mode: 'ga';
+  includeDomains?: string[];
+  startingUrl?: string;
 }
 
 interface StartRecordingResponse {
@@ -135,7 +137,7 @@ class ElectronApp {
     
     if (isDev) {
       this.mainWindow.loadURL('http://localhost:3000');
-      this.mainWindow.webContents.openDevTools();
+      // this.mainWindow.webContents.openDevTools();
     } else {
       const rendererPath = resolve(__dirname, '..', 'renderer', 'index.html');
       this.mainWindow.loadFile(rendererPath);
@@ -150,6 +152,8 @@ class ElectronApp {
         const result = await this.recorderManager.startRecording({
           recordingName: payload.recordingName,
           mode: payload.mode,
+          includeDomains: payload.includeDomains,
+          startingUrl: payload.startingUrl,
         });
         return { pageUrl: result.pageUrl };
       } catch (error) {
@@ -185,6 +189,26 @@ class ElectronApp {
         console.error('Failed to export data:', error);
         throw error;
       }
+    });
+
+    // Show save dialog
+    ipcMain.handle('dialog:showSaveDialog', async (): Promise<{ filePath: string | undefined }> => {
+      const result = await dialog.showSaveDialog(this.mainWindow!, {
+        title: 'Save Recording as CSV',
+        defaultPath: 'recording.csv',
+        filters: [{ name: 'CSV Files', extensions: ['csv'] }],
+      });
+      return { filePath: result.canceled ? undefined : result.filePath };
+    });
+
+    // Show open dialog
+    ipcMain.handle('dialog:showOpenDialog', async (): Promise<{ filePath: string | undefined }> => {
+      const result = await dialog.showOpenDialog(this.mainWindow!, {
+        title: 'Open CSV Recording',
+        filters: [{ name: 'CSV Files', extensions: ['csv'] }],
+        properties: ['openFile'],
+      });
+      return { filePath: result.canceled || result.filePaths.length === 0 ? undefined : result.filePaths[0] };
     });
 
     // Import data

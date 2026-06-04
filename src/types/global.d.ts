@@ -3,6 +3,8 @@
 interface StartRecordingPayload {
   recordingName: string;
   mode: 'ga';
+  includeDomains?: string[];
+  startingUrl?: string;
 }
 
 interface StartRecordingResponse {
@@ -76,6 +78,8 @@ interface RecorderAPI {
   stop: () => Promise<StopRecordingResponse>;
   export: (payload: ExportPayload) => Promise<ExportResponse>;
   import: (payload: ImportPayload) => Promise<ImportResponse>;
+  showSaveDialog: () => Promise<{ filePath: string | undefined }>;
+  showOpenDialog: () => Promise<{ filePath: string | undefined }>;
 }
 
 type OnRecorderEvent = (callback: RecorderEventCallback) => void;
